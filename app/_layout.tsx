@@ -1,24 +1,22 @@
-import { DarkTheme, DefaultTheme, ThemeProvider } from '@react-navigation/native';
 import { Stack } from 'expo-router';
-import { StatusBar } from 'expo-status-bar';
-import 'react-native-reanimated';
-
-import { useColorScheme } from '@/hooks/use-color-scheme';
-
-export const unstable_settings = {
-  anchor: '(tabs)',
-};
+import { useDatabase } from '../database/useDatabase'; // 1. Importamos nosso hook
+import { Text } from 'react-native';
 
 export default function RootLayout() {
-  const colorScheme = useColorScheme();
+  
+  // 2. Usamos o hook aqui. Isso vai rodar o código do useEffect
+  const { isDbLoading } = useDatabase(); 
 
+  // 3. Enquanto o DB carrega, mostramos uma tela de "Carregando..."
+  if (isDbLoading) {
+    return <Text style={{ flex: 1, justifyContent: 'center', alignItems: 'center' }}>Carregando banco de dados...</Text>;
+  }
+
+  // 4. Quando o DB estiver pronto, mostramos o app (as abas)
   return (
-    <ThemeProvider value={colorScheme === 'dark' ? DarkTheme : DefaultTheme}>
-      <Stack>
-        <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
-        <Stack.Screen name="modal" options={{ presentation: 'modal', title: 'Modal' }} />
-      </Stack>
-      <StatusBar style="auto" />
-    </ThemeProvider>
+    <Stack>
+      <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
+      <Stack.Screen name="modal" options={{ presentation: 'modal' }} />
+    </Stack>
   );
 }

@@ -1,50 +1,74 @@
-# Welcome to your Expo app 👋
+# App Lanchonete - Controle de Vendas e Estoque
+Projeto de Extensão Acadêmica para um aplicativo de Ponto de Venda (PDV) e Gestão de Estoque, desenvolvido em React Native (Expo) com foco em microempresas.
 
-This is an [Expo](https://expo.dev) project created with [`create-expo-app`](https://www.npmjs.com/package/create-expo-app).
+## 1. 🚀 Aplicativo Finalizado (.apk)
+Você pode baixar e instalar o aplicativo Android finalizado (.apk) diretamente através deste link:
 
-## Get started
+**[Baixar o Aplicativo (Produção .apk)](https://expo.dev/accounts/rsajr/projects/app-lanchonete/builds/6cf82e5a-faa6-4795-94f1-1b5822c998a0)**
 
-1. Install dependencies
+*(O app foi construído em "Modo de Produção", é 100% independente e não precisa de nenhum servidor para rodar).*
 
-   ```bash
-   npm install
-   ```
+---
 
-2. Start the app
+## 2. O Problema (O Porquê)
+O projeto foi desenvolvido para a "Lanchonete Sabor da Vila", uma microempresa familiar que realizava 100% do seu controle de vendas e estoque em cadernos manuais. Isso gerava problemas operacionais graves:
+* **Lentidão** no atendimento, causando filas.
+* **Erros** frequentes no fechamento de caixa.
+* **Desperdício** de produtos perecíveis (estimado em 15% do estoque).
+* **Falta** de produtos populares por má gestão de compras.
+* **Ausência** de dados históricos para tomar decisões.
 
-   ```bash
-   npx expo start
-   ```
+## 3. A Solução (O Quê)
+Foi desenvolvido um aplicativo multiplataforma (Android) 100% offline-first, capaz de substituir o caderno e fornecer controle em tempo real para a proprietária e seus funcionários.
 
-In the output, you'll find options to open the app in a
+### Funcionalidades Principais
+O app é dividido em três módulos (abas):
 
-- [development build](https://docs.expo.dev/develop/development-builds/introduction/)
-- [Android emulator](https://docs.expo.dev/workflow/android-studio-emulator/)
-- [iOS simulator](https://docs.expo.dev/workflow/ios-simulator/)
-- [Expo Go](https://expo.dev/go), a limited sandbox for trying out app development with Expo
+#### 📊 1. Relatórios
+Uma tela de **relatório simples** que exibe um resumo das vendas (com base nos dados do banco local):
+* **Resumo de Hoje:** Total faturado no dia e o item mais vendido.
+* **Faturamento Total:** Soma de todas as vendas já registradas.
+* **Vendas Recentes:** Uma lista com os últimos itens vendidos.
 
-You can start developing by editing the files inside the **app** directory. This project uses [file-based routing](https://docs.expo.dev/router/introduction).
+#### 🛒 2. Registrar Venda (PDV)
+Uma tela de Ponto de Venda (PDV) otimizada para agilidade:
+* Lista os produtos disponíveis com estoque.
+* Permite adicionar itens a um carrinho de compras.
+* O carrinho possui controle de quantidade (+/-) para ajuste rápido de itens.
+* Ao **"Finalizar Venda"**:
+    * Dá baixa automática no estoque (comando `UPDATE` no SQLite).
+    * Registra a venda no histórico (comando `INSERT` no SQLite).
 
-## Get a fresh project
+#### 📦 3. Produtos e Estoque (CRUD)
+Um módulo completo de gestão de inventário (CRUD):
+* **Criar (Create):** Formulário para cadastrar novos produtos (nome, preço, estoque).
+* **Ler (Read):** Lista todos os produtos cadastrados.
+* **Atualizar (Update):** Permite editar nome, preço e estoque de produtos existentes.
+* **Excluir (Delete):** Permite remover produtos do cadastro.
 
-When you're ready, run:
+## 4. Tecnologias Utilizadas (O Como)
+* **React Native com Expo:** Framework principal para o desenvolvimento multiplataforma.
+* **TypeScript:** Para segurança e robustez do código.
+* **Expo Router (v3):** Sistema de navegação baseado em arquivos (file-system routing).
+* **Expo-SQLite:** Para o banco de dados relacional local, garantindo o funcionamento 100% offline.
+* **Expo Application Services (EAS):** Utilizado para criar os *Development Builds* (para testes) e os *Production Builds* (o `.apk` final).
 
-```bash
-npm run reset-project
-```
+## 5. Como Rodar o Projeto (Modo de Desenvolvimento)
 
-This command will move the starter code to the **app-example** directory and create a blank **app** directory where you can start developing.
+Este projeto utiliza `expo-sqlite`, que é uma biblioteca nativa. Por isso, ele **não funciona** no aplicativo "Expo Go" padrão da Play Store. Ele precisa de um "Build de Desenvolvimento" customizado.
 
-## Learn more
+1.  **Clone o repositório:**
+    `git clone https://github.com/[SEU-USUARIO]/[NOME-DO-REPO].git`
+2.  **Entre na pasta:**
+    `cd app-lanchonete`
+3.  **Instale as dependências:**
+    `npm install`
+4.  **Construa o .apk de desenvolvimento (necessário apenas uma vez):**
+    `npx eas build --profile development --platform android`
+5.  **Instale o .apk** baixado no seu celular Android.
+6.  **Inicie o servidor de desenvolvimento:**
+    `npx expo start --dev-client`
+7.  **Abra o app "app-lanchonete"** no seu celular (ele vai se conectar ao servidor).
 
-To learn more about developing your project with Expo, look at the following resources:
-
-- [Expo documentation](https://docs.expo.dev/): Learn fundamentals, or go into advanced topics with our [guides](https://docs.expo.dev/guides).
-- [Learn Expo tutorial](https://docs.expo.dev/tutorial/introduction/): Follow a step-by-step tutorial where you'll create a project that runs on Android, iOS, and the web.
-
-## Join the community
-
-Join our community of developers creating universal apps.
-
-- [Expo on GitHub](https://github.com/expo/expo): View our open source platform and contribute.
-- [Discord community](https://chat.expo.dev): Chat with Expo users and ask questions.
+## 6. Autor
+**[Reginaldo Silva de Albuquerque Junior]**

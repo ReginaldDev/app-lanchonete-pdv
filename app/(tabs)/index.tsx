@@ -1,98 +1,272 @@
-import { Image } from 'expo-image';
-import { Platform, StyleSheet } from 'react-native';
+// Imports (sem mudanças)
+import { useState } from 'react';
+import { StyleSheet, Text, View, Button, FlatList, Alert, TouchableOpacity } from 'react-native';
+import { useDatabase } from '../../database/useDatabase'; // Nosso hook de DB
+import { useFocusEffect } from 'expo-router'; // Para recarregar os dados
+import React from 'react';
+import { Ionicons } from '@expo/vector-icons'; // Para ícones
 
-import { HelloWave } from '@/components/hello-wave';
-import ParallaxScrollView from '@/components/parallax-scroll-view';
-import { ThemedText } from '@/components/themed-text';
-import { ThemedView } from '@/components/themed-view';
-import { Link } from 'expo-router';
+// Interfaces (sem mudanças)
+interface Produto {
+  id: number;
+  nome: string;
+  preco: number;
+  estoque: number;
+}
+interface ItemCarrinho extends Produto {
+  quantidade: number;
+}
 
-export default function HomeScreen() {
+export default function TabVendas() {
+  // States e hook useDatabase (sem mudanças)
+  const [produtos, setProdutos] = useState<Produto[]>([]);
+  const [carrinho, setCarrinho] = useState<ItemCarrinho[]>([]); 
+  const { db } = useDatabase();
+
+  // Funções carregarProdutosDisponiveis, useFocusEffect, adicionarAoCarrinho, 
+  // handleAumentarQtd, handleDiminuirQtd, totalCarrinho (TODAS SEM MUDANÇAS)
+  
+  async function carregarProdutosDisponiveis() {
+    try {
+      const produtosDB = await db.getAllAsync<any>(
+        'SELECT * FROM produtos WHERE estoque > 0'
+      );
+      setProdutos(produtosDB);
+    } catch (error) {
+      console.error("Erro ao carregar produtos:", error);
+    }
+  }
+
+  useFocusEffect(
+    React.useCallback(() => {
+      carregarProdutosDisponiveis();
+      setCarrinho([]); 
+    }, [])
+  );
+
+  function adicionarAoCarrinho(produto: Produto) {
+    const itemExistente = carrinho.find((item) => item.id === produto.id);
+    if (itemExistente) {
+      handleAumentarQtd(itemExistente.id);
+    } else {
+      setCarrinho([...carrinho, { ...produto, quantidade: 1 }]);
+    }
+  }
+
+  function handleAumentarQtd(id: number) {
+    const item = carrinho.find((item) => item.id === id);
+    if (!item) return; 
+    if (item.quantidade >= item.estoque) {
+      Alert.alert("Estoque insuficiente", `Você só tem ${item.estoque} unidades de ${item.nome} no estoque.`);
+      return;
+    }
+    setCarrinho(
+      carrinho.map((item) =>
+        item.id === id ? { ...item, quantidade: item.quantidade + 1 } : item
+      )
+    );
+  }
+
+  function handleDiminuirQtd(id: number) {
+    const item = carrinho.find((item) => item.id === id);
+    if (!item) return; 
+    if (item.quantidade === 1) {
+      setCarrinho(carrinho.filter((item) => item.id !== id));
+    } else {
+      setCarrinho(
+        carrinho.map((item) =>
+          item.id === id ? { ...item, quantidade: item.quantidade - 1 } : item
+        )
+      );
+    }
+  }
+
+  const totalCarrinho = carrinho.reduce(
+    (total, item) => total + item.preco * item.quantidade,
+    0
+  );
+
+  // =========================================================
+  // <<< MODIFICAÇÃO IMPORTANTE AQUI >>>
+  // =========================================================
+  async function handleFinalizarVenda() {
+    
+    // Pega a data e hora atual em formato de texto (string)
+    const dataVendaAtual = new Date().toISOString(); 
+
+    try {
+      // 1. Prepara as atualizações de estoque (igual antes)
+      const promessasDeEstoque = carrinho.map((item) => {
+        const novoEstoque = item.estoque - item.quantidade;
+        return db.runAsync(
+          'UPDATE produtos SET estoque = ? WHERE id = ?',
+          novoEstoque,
+          item.id
+        );
+      });
+
+      // 2. <<< NOVO >>> Prepara os registros no histórico
+      const promessasDeHistorico = carrinho.map((item) => {
+        return db.runAsync(
+          'INSERT INTO historico_vendas (produto_nome, quantidade, preco_total, data_venda) VALUES (?, ?, ?, ?)',
+          item.nome,
+          item.quantidade,
+          item.preco * item.quantidade,
+          dataVendaAtual // Salva a mesma data para todos os itens da venda
+        );
+      });
+
+      // 3. Executa TODAS as promessas (Estoque e Histórico)
+      await Promise.all([
+        ...promessasDeEstoque,
+        ...promessasDeHistorico
+      ]);
+
+      // 4. Se deu tudo certo (igual antes)
+      Alert.alert("Sucesso!", "Venda finalizada e estoque atualizado.");
+      setCarrinho([]); 
+      carregarProdutosDisponiveis(); 
+
+    } catch (error) {
+      console.error("Erro ao finalizar a venda:", error);
+      Alert.alert("Erro", "Não foi possível finalizar a venda. Tente novamente.");
+    }
+  }
+  // =========================================================
+  // <<< FIM DA MODIFICAÇÃO >>>
+  // =========================================================
+
+
+  // JSX (return) - Sem nenhuma mudança
   return (
-    <ParallaxScrollView
-      headerBackgroundColor={{ light: '#A1CEDC', dark: '#1D3D47' }}
-      headerImage={
-        <Image
-          source={require('@/assets/images/partial-react-logo.png')}
-          style={styles.reactLogo}
+    <View style={styles.container}>
+      
+      {/* Seção 1: Produtos Disponíveis */}
+      <View style={styles.secao}>
+        <Text style={styles.title}>Produtos Disponíveis</Text>
+        <FlatList
+          data={produtos}
+          keyExtractor={(item) => item.id.toString()}
+          renderItem={({ item }) => (
+            <TouchableOpacity 
+              style={styles.itemProduto} 
+              onPress={() => adicionarAoCarrinho(item)}
+            >
+              <Text style={styles.itemTexto}>{item.nome}</Text>
+              <Text style={styles.itemTexto}>R$ {item.preco.toFixed(2)}</Text>
+              <Text style={styles.itemTexto}>Estoque: {item.estoque}</Text>
+            </TouchableOpacity>
+          )}
         />
-      }>
-      <ThemedView style={styles.titleContainer}>
-        <ThemedText type="title">Welcome!</ThemedText>
-        <HelloWave />
-      </ThemedView>
-      <ThemedView style={styles.stepContainer}>
-        <ThemedText type="subtitle">Step 1: Try it</ThemedText>
-        <ThemedText>
-          Edit <ThemedText type="defaultSemiBold">app/(tabs)/index.tsx</ThemedText> to see changes.
-          Press{' '}
-          <ThemedText type="defaultSemiBold">
-            {Platform.select({
-              ios: 'cmd + d',
-              android: 'cmd + m',
-              web: 'F12',
-            })}
-          </ThemedText>{' '}
-          to open developer tools.
-        </ThemedText>
-      </ThemedView>
-      <ThemedView style={styles.stepContainer}>
-        <Link href="/modal">
-          <Link.Trigger>
-            <ThemedText type="subtitle">Step 2: Explore</ThemedText>
-          </Link.Trigger>
-          <Link.Preview />
-          <Link.Menu>
-            <Link.MenuAction title="Action" icon="cube" onPress={() => alert('Action pressed')} />
-            <Link.MenuAction
-              title="Share"
-              icon="square.and.arrow.up"
-              onPress={() => alert('Share pressed')}
-            />
-            <Link.Menu title="More" icon="ellipsis">
-              <Link.MenuAction
-                title="Delete"
-                icon="trash"
-                destructive
-                onPress={() => alert('Delete pressed')}
-              />
-            </Link.Menu>
-          </Link.Menu>
-        </Link>
+      </View>
 
-        <ThemedText>
-          {`Tap the Explore tab to learn more about what's included in this starter app.`}
-        </ThemedText>
-      </ThemedView>
-      <ThemedView style={styles.stepContainer}>
-        <ThemedText type="subtitle">Step 3: Get a fresh start</ThemedText>
-        <ThemedText>
-          {`When you're ready, run `}
-          <ThemedText type="defaultSemiBold">npm run reset-project</ThemedText> to get a fresh{' '}
-          <ThemedText type="defaultSemiBold">app</ThemedText> directory. This will move the current{' '}
-          <ThemedText type="defaultSemiBold">app</ThemedText> to{' '}
-          <ThemedText type="defaultSemiBold">app-example</ThemedText>.
-        </ThemedText>
-      </ThemedView>
-    </ParallaxScrollView>
+      {/* Seção 2: Carrinho / Venda Atual */}
+      <View style={styles.secao}>
+        <Text style={styles.title}>Carrinho</Text>
+        <FlatList
+          data={carrinho}
+          keyExtractor={(item) => item.id.toString()}
+          renderItem={({ item }) => (
+            <View style={styles.itemCarrinho}>
+              <View style={styles.itemInfoCarrinho}>
+                <Text style={styles.itemNome}>{item.nome}</Text>
+                <Text style={styles.itemTexto}>
+                  Total: R$ {(item.preco * item.quantidade).toFixed(2)}
+                </Text>
+              </View>
+              
+              <View style={styles.itemQtdControle}>
+                <TouchableOpacity onPress={() => handleDiminuirQtd(item.id)} style={styles.botaoQtd}>
+                  <Ionicons name="remove-circle" size={26} color="#dc3545" />
+                </TouchableOpacity>
+                <Text style={styles.itemQtdTexto}>{item.quantidade}</Text>
+                <TouchableOpacity onPress={() => handleAumentarQtd(item.id)} style={styles.botaoQtd}>
+                  <Ionicons name="add-circle" size={26} color="#007bff" />
+                </TouchableOpacity>
+              </View>
+            </View>
+          )}
+          ListFooterComponent={
+            <Text style={styles.totalCarrinho}>
+              Total da Venda: R$ {totalCarrinho.toFixed(2)}
+            </Text>
+          }
+        />
+        <Button 
+          title="Finalizar Venda" 
+          onPress={handleFinalizarVenda} 
+          disabled={carrinho.length === 0} 
+        />
+      </View>
+    </View>
   );
 }
 
+// Estilos (sem mudanças)
 const styles = StyleSheet.create({
-  titleContainer: {
+  container: {
+    flex: 1,
+    padding: 16,
+    backgroundColor: '#f5f5ff', 
+  },
+  secao: {
+    flex: 1, 
+    marginBottom: 10,
+  },
+  title: {
+    fontSize: 22,
+    fontWeight: 'bold',
+    marginBottom: 10,
+    textAlign: 'center',
+  },
+  itemProduto: {
+    backgroundColor: '#fff',
+    padding: 12,
+    borderRadius: 8,
+    marginBottom: 8,
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    elevation: 2,
+    borderColor: '#ddd',
+    borderWidth: 1,
+  },
+  itemCarrinho: {
+    backgroundColor: '#fff', 
+    padding: 10,
+    borderRadius: 8,
+    marginBottom: 8,
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    elevation: 2,
+  },
+  itemInfoCarrinho: {
+    flex: 1, 
+  },
+  itemNome: {
+    fontSize: 16,
+    fontWeight: 'bold',
+  },
+  itemQtdControle: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 8,
   },
-  stepContainer: {
-    gap: 8,
-    marginBottom: 8,
+  botaoQtd: {
+    padding: 4, 
   },
-  reactLogo: {
-    height: 178,
-    width: 290,
-    bottom: 0,
-    left: 0,
-    position: 'absolute',
+  itemQtdTexto: {
+    fontSize: 18,
+    fontWeight: 'bold',
+    marginHorizontal: 12, 
+  },
+  itemTexto: {
+    fontSize: 16,
+  },
+  totalCarrinho: {
+    fontSize: 20,
+    fontWeight: 'bold',
+    textAlign: 'right',
+    marginTop: 10,
+    padding: 10,
   },
 });
