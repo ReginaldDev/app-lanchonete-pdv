@@ -71,4 +71,4 @@ Este projeto utiliza `expo-sqlite`, que é uma biblioteca nativa. Por isso, ele 
 7.  **Abra o app "app-lanchonete"** no seu celular (ele vai se conectar ao servidor).
 
 ## 6. Autor
-**[Reginaldo Silva de Albuquerque Junior]**
+**[Reginaldo Silva de Albuquerque Junior](https://github.com/ReginaldDev)**
