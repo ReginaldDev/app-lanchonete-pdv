@@ -58,7 +58,7 @@ Um módulo completo de gestão de inventário (CRUD):
 Este projeto utiliza `expo-sqlite`, que é uma biblioteca nativa. Por isso, ele **não funciona** no aplicativo "Expo Go" padrão da Play Store. Ele precisa de um "Build de Desenvolvimento" customizado.
 
 1.  **Clone o repositório:**
-    `git clone https://github.com/[SEU-USUARIO]/[NOME-DO-REPO].git`
+    `git clone https://github.com/ReginaldDev/app-lanchonete-pdv.git`
 2.  **Entre na pasta:**
     `cd app-lanchonete`
 3.  **Instale as dependências:**
